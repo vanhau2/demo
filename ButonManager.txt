@@ -1,0 +1,144 @@
+using System.Collections.Generic;
+using Unity.VisualScripting.FullSerializer;
+using UnityEngine;
+
+public class ButtonManager : MonoBehaviour
+{
+
+    private const string AudioStateKey = "isAudio";
+    private const string ActiveButtonKey = "ActiveButton";
+    private const string HighScoreKey = "HighScore";
+    public static ButtonManager Instance { get; private set; }
+    public List<SongData> listSong;
+
+    public int CurrentIndex { get; private set; } = -1;
+    public int NumberHeart { get; private set; } = 0;
+    public string JsonFilePath { get; private set; } = "Assets/StreamingAssets/.json";
+
+    public string AudioClipPath { get; private set; } = "Assets/Audio/defaultClip";
+
+    public int Score { get; private set; } = 0;
+    public int Stars { get; private set; } = 0;
+
+
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject);
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+    // lấy số sao user đạt được
+    public void SetStars(int heart)
+    {
+        Stars = heart;
+    }
+    public int GetStars()
+    {
+        return Stars;
+    }
+    // lấy điểm trong game play 
+    public void SetScore(int point)
+    {
+        Score = point;
+        SaveHighScore(point);
+    }
+
+    public void SaveHighScore(int score)
+    {
+        int levelIndex = GetCurrentIndex(); // Lấy chỉ số màn chơi hiện tại
+        string highScoreKey = "HighScore_Level_" + levelIndex;
+
+        int currentHighScore = PlayerPrefs.GetInt(highScoreKey, 0);
+        if (score > currentHighScore)
+        {
+            PlayerPrefs.SetInt(highScoreKey, score);
+            PlayerPrefs.Save(); // Lưu lại điểm số
+        }
+    }
+    public int GetHighScoreForLevel(int levelIndex)
+    {
+        string highScoreKey = "HighScore_Level_" + levelIndex; // (HighScore_Level_+ levelIndex) key riêng của mỗi list game
+        return PlayerPrefs.GetInt(highScoreKey, 0);
+    }
+    public int GetHighScore()
+    {
+        int levelIndex = GetCurrentIndex();
+        string highScoreKey = "HighScore_Level_" + levelIndex;
+        return PlayerPrefs.GetInt(highScoreKey, 0);
+    }
+    public int GetScore()
+    {
+        return Score;
+    }
+// lấy chỉ số thứ tự của khi button được nhấn 
+    public void SetCurrentIndex(int index)
+    {
+        CurrentIndex = index;
+    }
+    public int GetCurrentIndex()
+    {
+        return CurrentIndex;
+    }
+    public void IncrementIndex()
+    {
+        if (listSong.Count == 0) return;
+
+        CurrentIndex = (CurrentIndex + 1) % listSong.Count;
+        Debug.Log("Current index is now: " + CurrentIndex);
+    }
+
+    
+    public void SetJsonFilePath(string newPath)
+    {
+        JsonFilePath = newPath;
+
+    }
+
+    public void SetAudioClipPath(string newSong)
+    {
+        AudioClipPath = newSong;
+    }
+    public void SetActiveButton(string buttonName)
+    {
+        PlayerPrefs.SetString(ActiveButtonKey, buttonName);
+        PlayerPrefs.Save();
+    }
+
+    public string GetActiveButton()
+    {
+        return PlayerPrefs.GetString(ActiveButtonKey, "homeButton");
+    }
+    public void SetAudioState(bool isAudioOn)
+    {
+        Debug.Log($"Setting audio state: {isAudioOn}");
+        PlayerPrefs.SetInt(AudioStateKey, isAudioOn ? 1 : 0);
+        PlayerPrefs.Save();
+
+
+    }
+    public bool IsAudioOn => PlayerPrefs.GetInt(AudioStateKey, 1) == 1;
+    private void OnApplicationQuit()
+    {
+
+        ClearButtonState();
+    }
+
+
+    private void OnDestroy()
+    {
+        ClearButtonState();
+    }
+
+    public void ClearButtonState()
+    {
+        PlayerPrefs.DeleteKey(ActiveButtonKey);
+        PlayerPrefs.Save();
+    }
+}
